@@ -1,0 +1,115 @@
+🧠 Overview: What We’re Building
+You’ll turn the existing Python scrapers into backend API endpoints that run scraping tasks based on user input, then serve the scraped data to a React frontend for visualization and download.
+
+✅ Phase 1: Refactor Python Scraper into API
+🔧 Tools:
+FastAPI or Flask (to expose scraping logic as an API)
+
+Pandas and openpyxl (already in use)
+
+Uvicorn or Gunicorn (for serving the app)
+
+🧩 Key Endpoints:
+Endpoint	Method	Description
+/scrape	POST	Takes a search query and industry sector
+/filter	GET	Returns businesses with "No Website"
+/analyze	GET	Returns rating/website filtered analysis
+/export	GET	Allows export/download of filtered results
+
+Example (scraper_api.py)
+python
+Copy
+Edit
+from fastapi import FastAPI, Request
+from pydantic import BaseModel
+from working_scraper import search_google_maps
+import pandas as pd
+
+app = FastAPI()
+
+class ScrapeRequest(BaseModel):
+    query: str
+    industry: str
+
+@app.post("/scrape")
+def run_scraper(request: ScrapeRequest):
+    data = search_google_maps(request.query, request.industry)
+    df = pd.DataFrame(data)
+    df.to_csv(f"{request.industry}_results.csv", index=False)
+    return {"message": "Scraping complete", "results": len(data)}
+Then run:
+
+bash
+Copy
+Edit
+uvicorn scraper_api:app --reload
+✅ Phase 2: Create a React Frontend
+🛠️ Tools:
+React.js (Vite or CRA)
+
+Axios (for making API requests)
+
+React-Table or Material-UI Table (to display results)
+
+FileSaver.js (for downloading CSV/Excel)
+
+🧱 Pages/Components:
+SearchForm.jsx – input for sector/query
+
+ResultsTable.jsx – table with scraped results
+
+FilterOptions.jsx – filter out “no website” entries
+
+ExportButton.jsx – download button
+
+Sample Search Component
+jsx
+Copy
+Edit
+import axios from 'axios';
+import { useState } from 'react';
+
+export default function SearchForm() {
+  const [query, setQuery] = useState('');
+  const [industry, setIndustry] = useState('');
+
+  const handleSearch = async () => {
+    const res = await axios.post('http://localhost:8000/scrape', { query, industry });
+    alert(`Found ${res.data.results} businesses`);
+  };
+
+  return (
+    <div className="flex flex-col gap-4">
+      <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search query" />
+      <input value={industry} onChange={(e) => setIndustry(e.target.value)} placeholder="Industry" />
+      <button onClick={handleSearch}>Run Scraper</button>
+    </div>
+  );
+}
+✅ Phase 3: Save Lists / Results
+You can either:
+
+Use localStorage to persist selected results temporarily
+
+OR use Supabase or MongoDB Atlas to store results by user (if login is needed)
+
+🗂 Project Folder Structure
+markdown
+Copy
+Edit
+/scraper-backend
+  - scraper_api.py
+  - working_scraper.py
+  - requirements.txt
+
+/client-frontend
+  - src/
+    - components/
+    - App.jsx
+    - index.js
+🧪 Testing Locally
+Run Backend: uvicorn scraper_api:app --reload
+
+Run Frontend: npm run dev
+
+Test communication via POST /scrape
